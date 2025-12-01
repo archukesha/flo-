@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStore } from '../store';
@@ -5,24 +6,17 @@ import { Card, BottomSheet, Slider, Button } from '../components/UI';
 import { parseDate, formatDate, formatDateRu, haptic, tg, cn } from '../lib/utils';
 import { Droplet, Moon, Heart, Activity, ChevronRight, Sparkles, Zap } from 'lucide-react';
 
-// --- Telemetry Stub ---
-const trackEvent = (name: string, params: Record<string, any> = {}) => {
-  console.log(`[Telemetry] ${name}`, params);
-};
-
 // --- Components ---
 
 const HomeHeader = React.memo(({ cycleDay, phase }: { cycleDay: number, phase: string }) => {
-  useEffect(() => {
-    trackEvent('home_header_view', { cycle_day: cycleDay });
-  }, [cycleDay]);
-
   return (
-    <div className="text-center space-y-1 pt-6 pb-2 animate-in slide-in-from-top-4 duration-500">
-      <h1 className="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">
-        Сегодня: День {cycleDay}
+    <div className="text-center space-y-2 pt-8 pb-4 animate-in slide-in-from-top-4 duration-700 page-enter">
+      <div className="inline-block px-3 py-1 bg-white/40 dark:bg-white/5 backdrop-blur-md rounded-full border border-white/20 shadow-sm">
+        <p className="text-xs font-bold text-gray-500 dark:text-gray-300 tracking-wider uppercase">{phase}</p>
+      </div>
+      <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-br from-gray-900 via-gray-700 to-gray-500 dark:from-white dark:via-gray-200 dark:to-gray-500 tracking-tight">
+        День {cycleDay}
       </h1>
-      <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{phase}</p>
     </div>
   );
 });
@@ -39,7 +33,7 @@ const CycleRing = React.memo(({
   daysUntilPeriod: number;
 }) => {
   const radius = 110;
-  const strokeWidth = 14;
+  const strokeWidth = 16; // Thicker ring
   const center = 140;
   const circumference = 2 * Math.PI * radius;
 
@@ -63,50 +57,77 @@ const CycleRing = React.memo(({
 
   return (
     <div 
-      className="relative flex justify-center items-center py-4 tap-highlight-transparent" 
+      className="relative flex justify-center items-center py-6 tap-highlight-transparent" 
       onClick={() => {
         haptic('light');
-        trackEvent('home_cycle_ring_click');
         window.location.hash = '#/calendar';
       }}
     >
-      <svg className="w-[260px] h-[260px] transition-all duration-300 ease-out" viewBox="0 0 280 280">
-        <circle cx={center} cy={center} r={radius} fill="none" strokeWidth={strokeWidth} className="stroke-gray-100 dark:stroke-zinc-800" />
+      {/* Background Glow */}
+      <div className="absolute inset-0 bg-primary/20 blur-[60px] rounded-full scale-75 animate-pulse-glow" />
+
+      <svg className="w-[280px] h-[280px] drop-shadow-2xl" viewBox="0 0 280 280">
+        <defs>
+          <linearGradient id="ringGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#E97A9A" />
+            <stop offset="100%" stopColor="#B9A2E1" />
+          </linearGradient>
+          <linearGradient id="trackGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="rgba(200,200,200,0.1)" />
+            <stop offset="100%" stopColor="rgba(200,200,200,0.2)" />
+          </linearGradient>
+          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="4" result="coloredBlur" />
+            <feMerge>
+                <feMergeNode in="coloredBlur" />
+                <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+
+        {/* Base Track */}
+        <circle cx={center} cy={center} r={radius} fill="none" strokeWidth={strokeWidth} className="stroke-gray-100/50 dark:stroke-white/5" />
+        
+        {/* Period Segment */}
         <circle
           cx={center} cy={center} r={radius}
           fill="none" strokeWidth={strokeWidth}
           strokeDasharray={`${periodArc.dashArray} ${circumference}`}
           strokeLinecap="round"
-          className="stroke-primary opacity-40"
+          className="stroke-primary"
           transform={`rotate(${periodArc.rotation} ${center} ${center})`}
+          filter="url(#glow)"
         />
+        
+        {/* Fertile Segment */}
         <circle
           cx={center} cy={center} r={radius}
           fill="none" strokeWidth={strokeWidth}
           strokeDasharray={`${fertileArc.dashArray} ${circumference}`}
           strokeLinecap="round"
-          className="stroke-secondary opacity-60"
+          className="stroke-secondary opacity-50"
           transform={`rotate(${fertileArc.rotation} ${center} ${center})`}
         />
-        <g transform={`rotate(${((ovulationDay - 1) / safeCycleLength) * 360 - 90} ${center} ${center})`}>
-          <circle cx={center + radius} cy={center} r={5} className="fill-secondary stroke-surface stroke-2" />
-        </g>
-        <g transform={`rotate(${cursorRotation} ${center} ${center})`} className="transition-transform duration-500 ease-out">
-           <circle cx={center + radius} cy={center} r={14} className="fill-primary/20 animate-pulse" />
-           <circle cx={center + radius} cy={center} r={8} className="fill-primary stroke-white dark:stroke-black stroke-2" />
+
+        {/* Cursor / Today Marker */}
+        <g transform={`rotate(${cursorRotation} ${center} ${center})`} className="transition-transform duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)]">
+           {/* Ripple Effect */}
+           <circle cx={center + radius} cy={center} r={20} className="fill-primary/20 animate-ping opacity-75" />
+           <circle cx={center + radius} cy={center} r={12} fill="url(#ringGradient)" className="stroke-white dark:stroke-black stroke-[3px] shadow-lg" />
         </g>
       </svg>
+
+      {/* Center Content */}
       <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-         <span className="text-5xl font-extrabold text-gray-900 dark:text-white tracking-tighter">
-            {currentDay}
-         </span>
-         <span className="text-xs font-medium text-gray-400 mt-1 uppercase tracking-wide">
-            День цикла
-         </span>
-         <div className="mt-2 px-2 py-1 bg-gray-100 dark:bg-zinc-800 rounded-full">
-            <span className="text-[10px] text-gray-500 font-semibold whitespace-nowrap">
-               {daysUntilPeriod > 0 ? `Через ${daysUntilPeriod} дн.` : 'Сегодня'}
-            </span>
+         <div className="flex flex-col items-center animate-float">
+             <span className="text-6xl font-black bg-gradient-to-b from-gray-800 to-gray-400 dark:from-white dark:to-gray-500 bg-clip-text text-transparent tracking-tighter drop-shadow-sm">
+                {currentDay}
+             </span>
+             <div className="mt-3 px-3 py-1.5 bg-white/60 dark:bg-black/40 backdrop-blur-md rounded-2xl border border-white/20 shadow-sm">
+                <span className="text-xs text-primary font-bold whitespace-nowrap">
+                   {daysUntilPeriod > 0 ? `Через ${daysUntilPeriod} дн.` : 'Сегодня'}
+                </span>
+             </div>
          </div>
       </div>
     </div>
@@ -117,36 +138,41 @@ const PredictionCards = React.memo(({ predictions }: { predictions: any }) => {
   const navigate = useNavigate();
   const { nextPeriodStart, ovulation } = predictions;
   
-  const handleNav = (hash: string, type: string) => {
+  const handleNav = (hash: string) => {
     haptic('light');
-    trackEvent('home_prediction_card_click', { type });
     navigate(`/calendar${hash}`);
   };
 
   return (
-    <div className="grid grid-cols-2 gap-3 px-1">
+    <div className="grid grid-cols-2 gap-3 px-2">
        <Card 
-          className="p-4 flex flex-col justify-between active:scale-95 transition-transform cursor-pointer bg-white dark:bg-zinc-900"
-          onClick={() => handleNav('#nextPeriodStart', 'period')}
+          className="p-5 flex flex-col justify-between active:scale-[0.98] transition-transform cursor-pointer relative overflow-hidden group border-0 ring-1 ring-black/5 dark:ring-white/10"
+          onClick={() => handleNav('#nextPeriodStart')}
        >
-          <div className="flex items-center gap-2 mb-2">
-             <Droplet size={18} className="text-primary" />
-             <span className="text-xs font-bold text-gray-400 uppercase">Месячные</span>
+          <div className="absolute right-0 top-0 w-24 h-24 bg-primary/10 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:bg-primary/20 transition-colors" />
+          <div className="flex items-center gap-2 mb-3 relative z-10">
+             <div className="p-2 bg-primary/10 rounded-full text-primary">
+                <Droplet size={18} fill="currentColor" />
+             </div>
+             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Месячные</span>
           </div>
-          <div className="font-semibold text-gray-900 dark:text-white text-sm">
-             Ожидаются {formatDateRu(nextPeriodStart)}
+          <div className="font-bold text-gray-900 dark:text-white text-md relative z-10 leading-tight">
+             {formatDateRu(nextPeriodStart)}
           </div>
        </Card>
 
        <Card 
-          className="p-4 flex flex-col justify-between active:scale-95 transition-transform cursor-pointer bg-white dark:bg-zinc-900"
-          onClick={() => handleNav('#ovulation', 'ovulation')}
+          className="p-5 flex flex-col justify-between active:scale-[0.98] transition-transform cursor-pointer relative overflow-hidden group border-0 ring-1 ring-black/5 dark:ring-white/10"
+          onClick={() => handleNav('#ovulation')}
        >
-          <div className="flex items-center gap-2 mb-2">
-             <Sparkles size={18} className="text-secondary" />
-             <span className="text-xs font-bold text-gray-400 uppercase">Овуляция</span>
+          <div className="absolute right-0 top-0 w-24 h-24 bg-secondary/10 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:bg-secondary/20 transition-colors" />
+          <div className="flex items-center gap-2 mb-3 relative z-10">
+             <div className="p-2 bg-secondary/10 rounded-full text-secondary">
+                <Sparkles size={18} />
+             </div>
+             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Овуляция</span>
           </div>
-          <div className="font-semibold text-gray-900 dark:text-white text-sm">
+          <div className="font-bold text-gray-900 dark:text-white text-md relative z-10 leading-tight">
              {formatDateRu(ovulation)}
           </div>
        </Card>
@@ -164,23 +190,20 @@ const QuickLog = React.memo(({
   const [activeItem, setActiveItem] = useState<string | null>(null);
   
   const items = [
-    { key: 'pain_belly', label: 'Боль', icon: Moon, type: 'symptom' },
-    { key: 'mood', label: 'Настроение', icon: Zap, type: 'mood' },
-    { key: 'fatigue', label: 'Энергия', icon: Activity, type: 'symptom' },
-    { key: 'libido', label: 'Либидо', icon: Heart, type: 'symptom' },
+    { key: 'pain_belly', label: 'Боль', icon: Moon, color: 'text-indigo-400', bg: 'bg-indigo-400/10' },
+    { key: 'mood', label: 'Муд', icon: Zap, color: 'text-yellow-400', bg: 'bg-yellow-400/10' },
+    { key: 'fatigue', label: 'Энергия', icon: Activity, color: 'text-blue-400', bg: 'bg-blue-400/10' },
+    { key: 'libido', label: 'Либидо', icon: Heart, color: 'text-red-400', bg: 'bg-red-400/10' },
   ];
 
-  // Filter out mood to simplify quick log
-  const numericItems = items.filter(i => i.type !== 'mood');
-
   return (
-    <div className="space-y-3 pt-2">
-      <div className="flex justify-between items-center px-1">
-         <h3 className="text-lg font-bold text-gray-900 dark:text-white">Быстрый лог</h3>
+    <div className="space-y-4 pt-4">
+      <div className="flex justify-between items-center px-3">
+         <h3 className="text-lg font-bold text-gray-900 dark:text-white tracking-tight">Как ты?</h3>
       </div>
       
-      <div className="flex flex-wrap gap-3 px-1">
-        {numericItems.map(s => {
+      <div className="flex gap-3 px-2 overflow-x-auto no-scrollbar pb-2">
+        {items.map(s => {
           const isActive = !!log?.symptoms?.[s.key];
           const val = log?.symptoms?.[s.key];
           return (
@@ -192,25 +215,25 @@ const QuickLog = React.memo(({
                 else onLog(s.key, 1);
               }}
               className={cn(
-                "flex items-center gap-2 px-4 py-2.5 rounded-2xl border transition-all active:scale-95",
+                "min-w-[100px] flex flex-col items-center justify-center gap-2 py-4 rounded-[20px] border transition-all duration-300 active:scale-95 relative overflow-hidden",
                 isActive 
-                  ? "bg-primary text-white border-primary shadow-lg shadow-primary/20" 
-                  : "bg-white dark:bg-zinc-900 border-gray-100 dark:border-zinc-800 text-gray-600 dark:text-gray-400"
+                  ? "bg-white dark:bg-zinc-800 border-primary shadow-lg shadow-primary/20 ring-1 ring-primary" 
+                  : "glass-card border-white/20"
               )}
             >
-               <s.icon size={18} className={cn(isActive ? "text-white" : "text-gray-400")} />
-               <span className="text-sm font-medium">{s.label}</span>
-               {isActive && val > 1 && (
-                  <span className="bg-white/20 px-1.5 rounded-full text-[10px] font-bold">{val}</span>
-               )}
+               {isActive && <div className="absolute inset-0 bg-primary/5" />}
+               <div className={cn("p-2.5 rounded-full transition-colors", isActive ? "bg-primary text-white" : cn(s.bg, s.color))}>
+                 <s.icon size={20} fill={isActive ? "currentColor" : "none"} />
+               </div>
+               <span className={cn("text-xs font-bold", isActive ? "text-primary" : "text-gray-500")}>{s.label}</span>
             </button>
           );
         })}
       </div>
 
       <BottomSheet isOpen={!!activeItem} onClose={() => setActiveItem(null)} title="Интенсивность">
-         <div className="pb-8 pt-2">
-            <div className="flex justify-between text-xs text-gray-400 mb-4 px-1 font-medium">
+         <div className="pb-8 pt-4">
+            <div className="flex justify-between text-xs font-bold text-gray-400 mb-6 px-1 tracking-wide uppercase">
                <span>Нет</span><span>Слабо</span><span>Средне</span><span>Сильно</span>
             </div>
             <Slider 
@@ -220,11 +243,11 @@ const QuickLog = React.memo(({
                   haptic('light');
                   if (activeItem) {
                      onLog(activeItem, v);
-                     if (v === 0) setActiveItem(null); // Close if 0
+                     if (v === 0) setActiveItem(null);
                   }
                }}
             />
-            <Button fullWidth className="mt-8" onClick={() => setActiveItem(null)}>Готово</Button>
+            <Button fullWidth className="mt-8 shadow-xl" onClick={() => setActiveItem(null)}>Готово</Button>
          </div>
       </BottomSheet>
     </div>
@@ -233,37 +256,44 @@ const QuickLog = React.memo(({
 
 const AdviceTeaser = React.memo(({ phase }: { phase: string }) => {
   const navigate = useNavigate();
-  // Mock content - logic for phase would go here
+  // Mock content
   const cards = [
-      { id: '1', title: 'Как облегчить боль?', tag: 'Здоровье' },
-      { id: '2', title: 'Питание в эти дни', tag: 'Еда' }
+      { id: '1', title: 'Йога для снятия боли', tag: 'Здоровье', bg: 'from-pink-500 to-rose-500' },
+      { id: '2', title: 'Что есть в эту фазу?', tag: 'Питание', bg: 'from-orange-400 to-amber-500' }
   ];
 
   return (
-    <div className="space-y-3 pt-2 pb-24">
+    <div className="space-y-4 pt-4 pb-28">
       <div 
-        className="flex justify-between items-center px-1 cursor-pointer active:opacity-70"
-        onClick={() => { navigate('/advice'); trackEvent('advice_teaser_open'); }}
+        className="flex justify-between items-center px-3 cursor-pointer active:opacity-70"
+        onClick={() => navigate('/advice')}
       >
-         <h3 className="text-lg font-bold text-gray-900 dark:text-white">Советы</h3>
-         <ChevronRight size={20} className="text-gray-400" />
+         <h3 className="text-lg font-bold text-gray-900 dark:text-white tracking-tight">Для тебя</h3>
+         <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-white/10 flex items-center justify-center">
+            <ChevronRight size={16} className="text-gray-500 dark:text-white" />
+         </div>
       </div>
-      <div className="flex gap-3 overflow-x-auto pb-4 px-1 no-scrollbar snap-x">
+      <div className="flex gap-4 overflow-x-auto pb-4 px-2 no-scrollbar snap-x">
          {cards.map(card => (
             <div 
                key={card.id}
                onClick={() => navigate(`/advice`)}
-               className="min-w-[220px] bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-gray-100 dark:border-zinc-800 shadow-sm snap-start active:scale-95 transition-transform"
+               className="min-w-[240px] h-32 relative rounded-[24px] overflow-hidden snap-start active:scale-95 transition-transform shadow-lg cursor-pointer"
             >
-               <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-1 rounded-full mb-2 inline-block">
-                  {card.tag}
-               </span>
-               <h4 className="font-bold text-gray-900 dark:text-white leading-tight line-clamp-2">
-                  {card.title}
-               </h4>
+               {/* Artistic Background */}
+               <div className={cn("absolute inset-0 bg-gradient-to-br opacity-90", card.bg)} />
+               <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-20 mix-blend-overlay" />
+               
+               <div className="relative z-10 p-5 flex flex-col justify-between h-full">
+                   <span className="self-start text-[10px] font-black text-white/90 bg-white/20 backdrop-blur-md px-2.5 py-1 rounded-full uppercase tracking-wider">
+                      {card.tag}
+                   </span>
+                   <h4 className="font-bold text-white text-lg leading-tight w-3/4">
+                      {card.title}
+                   </h4>
+               </div>
             </div>
          ))}
-         <div className="w-2 shrink-0" />
       </div>
     </div>
   );
@@ -275,12 +305,9 @@ export const Home: React.FC = () => {
   const [now, setNow] = useState(new Date());
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      const d = new Date();
-      if (d.getDate() !== now.getDate()) setNow(d);
-    }, 60000);
+    const timer = setInterval(() => setNow(new Date()), 60000);
     return () => clearInterval(timer);
-  }, [now]);
+  }, []);
 
   const todayStr = useMemo(() => formatDate(now), [now]);
   const log = logs[todayStr] || { symptoms: {}, menstruation: { active: false }, mood: null };
@@ -313,15 +340,13 @@ export const Home: React.FC = () => {
     };
     if (!newLog.menstruation) newLog.menstruation = { active: false };
     if (!newLog.sex) newLog.sex = { active: false };
-
     addLog(todayStr, newLog as any);
   }, [log, todayStr, addLog]);
 
   const handleMainBtnClick = useCallback(() => {
     haptic('light');
-    trackEvent('home_main_button_click', { has_log: hasLog });
     navigate(`/log/${todayStr}`);
-  }, [hasLog, todayStr, navigate]);
+  }, [todayStr, navigate]);
 
   useEffect(() => {
     if (!tg) return;
@@ -332,13 +357,11 @@ export const Home: React.FC = () => {
       text_color: tg.themeParams?.button_text_color || '#FFFFFF'
     });
     tg.MainButton.onClick(handleMainBtnClick);
-    return () => {
-      tg.MainButton.offClick(handleMainBtnClick);
-    };
+    return () => tg.MainButton.offClick(handleMainBtnClick);
   }, [hasLog, handleMainBtnClick]);
 
   return (
-    <div className="min-h-screen bg-surface dark:bg-black px-4 overscroll-y-none">
+    <div className="min-h-screen px-4 overscroll-y-none pb-safe">
       <HomeHeader cycleDay={calculations.cycleDay} phase={calculations.phase} />
       <CycleRing 
         cycleLength={profile.cycle.averageLength}

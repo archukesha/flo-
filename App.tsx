@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Home } from './pages/Home';
@@ -12,7 +13,6 @@ import { Navigation } from './components/Navigation';
 import { useStore } from './store';
 import { tg } from './lib/utils';
 
-// Guard for routes requiring onboarding
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const isOnboarded = useStore((state) => state.profile.isOnboarded);
   if (!isOnboarded) {
@@ -25,16 +25,14 @@ export const App: React.FC = () => {
   const isDark = tg?.colorScheme === 'dark';
 
   useEffect(() => {
-    // Telegram WebApp Initialization
     if (tg) {
       tg.ready();
       tg.expand();
-      // Set header color to match theme
-      tg.setHeaderColor(isDark ? '#000000' : '#ffffff');
-      tg.setBackgroundColor(isDark ? '#000000' : '#F9FAFB');
+      // Transparent header to let background shine through
+      tg.setHeaderColor(isDark ? '#000000' : '#ffffff'); 
+      tg.setBackgroundColor(isDark ? '#000000' : '#ffffff'); 
     }
     
-    // Apply dark mode class to html based on Telegram theme or system preference
     if (isDark || window.matchMedia('(prefers-color-scheme: dark)').matches) {
       document.documentElement.classList.add('dark');
     } else {
@@ -44,7 +42,15 @@ export const App: React.FC = () => {
 
   return (
     <HashRouter>
-      <div className="max-w-md mx-auto min-h-screen bg-surface dark:bg-black text-gray-900 dark:text-white font-sans overflow-x-hidden">
+      <div className="relative max-w-md mx-auto min-h-screen font-sans overflow-x-hidden selection:bg-primary/20">
+        
+        {/* Ambient Background Blobs */}
+        <div className="fixed inset-0 z-[-1] overflow-hidden pointer-events-none">
+           <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-primary/20 dark:bg-primary/10 rounded-full blur-[100px] opacity-70 animate-blob" />
+           <div className="absolute top-[20%] right-[-20%] w-[400px] h-[400px] bg-secondary/20 dark:bg-secondary/10 rounded-full blur-[100px] opacity-60 animate-blob animation-delay-2000" />
+           <div className="absolute bottom-[-10%] left-[20%] w-[600px] h-[600px] bg-purple-200/20 dark:bg-purple-900/10 rounded-full blur-[120px] opacity-50 animate-blob animation-delay-4000" />
+        </div>
+
         <Routes>
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
@@ -54,7 +60,6 @@ export const App: React.FC = () => {
           <Route path="/advice" element={<ProtectedRoute><Advice /></ProtectedRoute>} />
           <Route path="/paywall" element={<Paywall />} />
           <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-          
           <Route path="*" element={<Navigate to="/home" replace />} />
         </Routes>
         <Navigation />
