@@ -58,10 +58,10 @@ const EMPTY_LOG: DayLog = {
 // --- Sub-Components ---
 
 const MenstruationBlock = React.memo(({ data, onChange, error }: { data: DayLog['menstruation'], onChange: (d: DayLog['menstruation']) => void, error?: boolean }) => (
-  <Card className={cn("space-y-4 transition-all duration-300", data.active ? "bg-primary/5 border-primary/20 shadow-md" : "")}>
+  <Card className={cn("space-y-4 transition-colors", data.active ? "bg-primary/5 border-primary/20" : "")}>
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-3">
-        <div className={cn("w-10 h-10 rounded-full flex items-center justify-center transition-colors duration-300", data.active ? "bg-primary text-white" : "bg-primary/10 text-primary")}>
+        <div className={cn("w-10 h-10 rounded-full flex items-center justify-center transition-colors", data.active ? "bg-primary text-white" : "bg-primary/10 text-primary")}>
           <Droplet size={20} fill={data.active ? "currentColor" : "none"} />
         </div>
         <div>
@@ -73,6 +73,7 @@ const MenstruationBlock = React.memo(({ data, onChange, error }: { data: DayLog[
         checked={data.active}
         onChange={(active) => {
           haptic('medium');
+          // If toggled ON, default to Light intensity (1). If OFF, reset all.
           onChange({ 
             ...data, 
             active, 
@@ -84,7 +85,7 @@ const MenstruationBlock = React.memo(({ data, onChange, error }: { data: DayLog[
     </div>
 
     {data.active && (
-      <div className="animate-slide-up space-y-4 pt-2">
+      <div className="animate-in slide-in-from-top-2 fade-in duration-300 space-y-4 pt-2">
         <div>
            <div className="flex justify-between text-xs font-medium text-gray-500 mb-2 px-1">
              {Object.values(INTENSITY_LABELS).map(l => <span key={l}>{l}</span>)}
@@ -93,7 +94,7 @@ const MenstruationBlock = React.memo(({ data, onChange, error }: { data: DayLog[
              min={1} max={4} step={1}
              value={data.intensity || 1}
              onChange={(v) => { haptic('light'); onChange({ ...data, intensity: v as 1|2|3|4 }); }}
-             className={cn(error && !data.intensity ? "ring-2 ring-red-500 rounded-lg animate-pulse" : "")}
+             className={cn(error && !data.intensity ? "ring-2 ring-red-500 rounded-lg" : "")}
            />
         </div>
         
@@ -105,8 +106,8 @@ const MenstruationBlock = React.memo(({ data, onChange, error }: { data: DayLog[
                   key={c.id}
                   onClick={() => { haptic('light'); onChange({ ...data, dischargeColor: c.id }); }}
                   className={cn(
-                    "w-8 h-8 rounded-full border-2 transition-all duration-300",
-                    data.dischargeColor === c.id ? "border-gray-900 dark:border-white scale-110 shadow-md" : "border-transparent scale-100"
+                    "w-8 h-8 rounded-full border-2 transition-transform active:scale-90",
+                    data.dischargeColor === c.id ? "border-gray-900 dark:border-white scale-110 shadow-md" : "border-transparent"
                   )}
                   style={{ backgroundColor: c.color }}
                   aria-label={c.id}
@@ -144,7 +145,7 @@ const SymptomsBlock = React.memo(({ symptoms, onChange }: { symptoms: Record<str
                   active={!!level}
                   color="primary"
                   onClick={() => handleTap(s.id)}
-                  className={cn(!!level && "pr-2", "transition-all duration-200")}
+                  className={cn(!!level && "pr-2", "transition-all")}
                />
              );
           })}
@@ -190,9 +191,9 @@ const MoodBlock = React.memo(({ value, onChange }: { value: string | null, onCha
                onChange(value === m.id ? null : m.id);
             }}
             className={cn(
-              "px-4 py-2.5 rounded-2xl border text-sm font-medium transition-all duration-200 active:scale-95",
+              "px-4 py-2.5 rounded-2xl border text-sm font-medium transition-all active:scale-95",
               value === m.id 
-                 ? "bg-secondary text-white border-secondary shadow-lg shadow-secondary/30 scale-105" 
+                 ? "bg-secondary text-white border-secondary shadow-lg shadow-secondary/30" 
                  : "bg-white dark:bg-zinc-900 border-gray-200 dark:border-zinc-800 text-gray-700 dark:text-gray-300"
             )}
           >
@@ -247,7 +248,7 @@ const SexBlock = React.memo(({ data, onChange }: { data: DayLog['sex'], onChange
      </div>
      
      {data.active && (
-        <Card className="animate-slide-up space-y-4 bg-gray-50 dark:bg-zinc-800 border-0">
+        <Card className="animate-in slide-in-from-top-2 fade-in space-y-4 bg-gray-50 dark:bg-zinc-800 border-0">
            <div>
               <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Контрацепция</div>
               <div className="flex flex-wrap gap-2">
@@ -279,7 +280,7 @@ const NotesBlock = React.memo(({ value, onChange, error }: { value: string | nul
   <div className="space-y-2">
      <div className="flex justify-between px-1">
         <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Заметки</h3>
-        <span className={cn("text-xs transition-colors", error ? "text-red-500 font-bold" : "text-gray-400")}>
+        <span className={cn("text-xs", error ? "text-red-500 font-bold" : "text-gray-400")}>
            {(value || '').length}/500
         </span>
      </div>
@@ -428,10 +429,10 @@ export const LogPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-surface dark:bg-black pb-safe animate-page-enter">
+    <div className="min-h-screen bg-surface dark:bg-black pb-32">
        {/* Header */}
        <div className="sticky top-0 z-30 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-gray-100 dark:border-zinc-800 px-4 h-14 flex items-center justify-between">
-          <button onClick={() => navigate('/calendar')} className="p-2 -ml-2 text-gray-600 dark:text-gray-300 active:scale-90 transition-transform">
+          <button onClick={() => navigate('/calendar')} className="p-2 -ml-2 text-gray-600 dark:text-gray-300">
              <ArrowLeft size={22} />
           </button>
           <div className="text-center">
@@ -442,9 +443,9 @@ export const LogPage: React.FC = () => {
        </div>
 
        {/* Form */}
-       <div className="p-4 space-y-6 max-w-lg mx-auto pb-32">
+       <div className="p-4 space-y-6 max-w-lg mx-auto">
           {isDraftRestored && (
-             <div className="bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-300 text-xs px-3 py-2 rounded-lg text-center animate-fade-in">
+             <div className="bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-300 text-xs px-3 py-2 rounded-lg text-center animate-in fade-in">
                 Черновик восстановлен
              </div>
           )}

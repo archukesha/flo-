@@ -7,7 +7,7 @@ import { Droplet, Moon, Heart, Activity, ChevronRight, Sparkles, Zap } from 'luc
 
 // --- Telemetry Stub ---
 const trackEvent = (name: string, params: Record<string, any> = {}) => {
-  // console.log(`[Telemetry] ${name}`, params);
+  console.log(`[Telemetry] ${name}`, params);
 };
 
 // --- Components ---
@@ -18,7 +18,7 @@ const HomeHeader = React.memo(({ cycleDay, phase }: { cycleDay: number, phase: s
   }, [cycleDay]);
 
   return (
-    <div className="text-center space-y-1 pt-6 pb-2 animate-slide-up [animation-delay:0ms]">
+    <div className="text-center space-y-1 pt-6 pb-2 animate-in slide-in-from-top-4 duration-500">
       <h1 className="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">
         Сегодня: День {cycleDay}
       </h1>
@@ -43,9 +43,6 @@ const CycleRing = React.memo(({
   const center = 140;
   const circumference = 2 * Math.PI * radius;
 
-  // Cap visualization to avoid broken ring if current day > cycle length (delayed period)
-  const displayCurrentDay = Math.min(currentDay, cycleLength);
-  
   const safeCycleLength = Math.max(21, Math.min(45, cycleLength));
   const safePeriodLength = Math.min(periodLength, safeCycleLength);
   
@@ -62,20 +59,11 @@ const CycleRing = React.memo(({
 
   const periodArc = createArc(1, safePeriodLength);
   const fertileArc = createArc(fertileStart, fertileEnd);
-  
-  // Animate cursor rotation
-  const [cursorRotation, setCursorRotation] = useState(-90);
-  useEffect(() => {
-    // Small delay to allow enter animation
-    setTimeout(() => {
-        const targetRot = ((displayCurrentDay - 1) / safeCycleLength) * 360 - 90;
-        setCursorRotation(targetRot);
-    }, 100);
-  }, [displayCurrentDay, safeCycleLength]);
+  const cursorRotation = ((currentDay - 1) / safeCycleLength) * 360 - 90;
 
   return (
     <div 
-      className="relative flex justify-center items-center py-4 tap-highlight-transparent animate-scale-in [animation-delay:100ms]" 
+      className="relative flex justify-center items-center py-4 tap-highlight-transparent" 
       onClick={() => {
         haptic('light');
         trackEvent('home_cycle_ring_click');
@@ -103,30 +91,21 @@ const CycleRing = React.memo(({
         <g transform={`rotate(${((ovulationDay - 1) / safeCycleLength) * 360 - 90} ${center} ${center})`}>
           <circle cx={center + radius} cy={center} r={5} className="fill-secondary stroke-surface stroke-2" />
         </g>
-        
-        {/* Cursor */}
-        <g 
-            style={{ transform: `rotate(${cursorRotation}deg)`, transformOrigin: `${center}px ${center}px` }} 
-            className="transition-transform duration-1000 cubic-bezier(0.2, 0.8, 0.2, 1)"
-        >
+        <g transform={`rotate(${cursorRotation} ${center} ${center})`} className="transition-transform duration-500 ease-out">
            <circle cx={center + radius} cy={center} r={14} className="fill-primary/20 animate-pulse" />
            <circle cx={center + radius} cy={center} r={8} className="fill-primary stroke-white dark:stroke-black stroke-2" />
         </g>
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-         <span className="text-5xl font-extrabold text-gray-900 dark:text-white tracking-tighter animate-fade-in [animation-delay:300ms]">
+         <span className="text-5xl font-extrabold text-gray-900 dark:text-white tracking-tighter">
             {currentDay}
          </span>
-         <span className="text-xs font-medium text-gray-400 mt-1 uppercase tracking-wide animate-fade-in [animation-delay:400ms]">
+         <span className="text-xs font-medium text-gray-400 mt-1 uppercase tracking-wide">
             День цикла
          </span>
-         <div className="mt-2 px-3 py-1 bg-gray-100 dark:bg-zinc-800 rounded-full animate-fade-in [animation-delay:500ms]">
-            <span className={cn(
-                "text-[10px] font-semibold whitespace-nowrap",
-                currentDay > cycleLength ? "text-red-500" : "text-gray-500"
-            )}>
-               {currentDay > cycleLength ? 'Задержка' : 
-                daysUntilPeriod > 0 ? `Через ${daysUntilPeriod} дн.` : 'Сегодня'}
+         <div className="mt-2 px-2 py-1 bg-gray-100 dark:bg-zinc-800 rounded-full">
+            <span className="text-[10px] text-gray-500 font-semibold whitespace-nowrap">
+               {daysUntilPeriod > 0 ? `Через ${daysUntilPeriod} дн.` : 'Сегодня'}
             </span>
          </div>
       </div>
@@ -145,36 +124,30 @@ const PredictionCards = React.memo(({ predictions }: { predictions: any }) => {
   };
 
   return (
-    <div className="grid grid-cols-2 gap-3 px-1 animate-slide-up [animation-delay:200ms]">
+    <div className="grid grid-cols-2 gap-3 px-1">
        <Card 
-          className="p-4 flex flex-col justify-between active:scale-95 transition-transform cursor-pointer bg-white dark:bg-zinc-900 hover:border-primary/30"
+          className="p-4 flex flex-col justify-between active:scale-95 transition-transform cursor-pointer bg-white dark:bg-zinc-900"
           onClick={() => handleNav('#nextPeriodStart', 'period')}
        >
           <div className="flex items-center gap-2 mb-2">
-             <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                <Droplet size={16} />
-             </div>
+             <Droplet size={18} className="text-primary" />
              <span className="text-xs font-bold text-gray-400 uppercase">Месячные</span>
           </div>
           <div className="font-semibold text-gray-900 dark:text-white text-sm">
-             Ожидаются <br/>
-             <span className="text-primary">{formatDateRu(nextPeriodStart)}</span>
+             Ожидаются {formatDateRu(nextPeriodStart)}
           </div>
        </Card>
 
        <Card 
-          className="p-4 flex flex-col justify-between active:scale-95 transition-transform cursor-pointer bg-white dark:bg-zinc-900 hover:border-secondary/30"
+          className="p-4 flex flex-col justify-between active:scale-95 transition-transform cursor-pointer bg-white dark:bg-zinc-900"
           onClick={() => handleNav('#ovulation', 'ovulation')}
        >
           <div className="flex items-center gap-2 mb-2">
-             <div className="w-8 h-8 rounded-full bg-secondary/10 flex items-center justify-center text-secondary">
-                <Sparkles size={16} />
-             </div>
+             <Sparkles size={18} className="text-secondary" />
              <span className="text-xs font-bold text-gray-400 uppercase">Овуляция</span>
           </div>
           <div className="font-semibold text-gray-900 dark:text-white text-sm">
-             Прогноз <br/>
-             <span className="text-secondary">{formatDateRu(ovulation)}</span>
+             {formatDateRu(ovulation)}
           </div>
        </Card>
     </div>
@@ -201,7 +174,7 @@ const QuickLog = React.memo(({
   const numericItems = items.filter(i => i.type !== 'mood');
 
   return (
-    <div className="space-y-3 pt-2 animate-slide-up [animation-delay:300ms]">
+    <div className="space-y-3 pt-2">
       <div className="flex justify-between items-center px-1">
          <h3 className="text-lg font-bold text-gray-900 dark:text-white">Быстрый лог</h3>
       </div>
@@ -219,9 +192,9 @@ const QuickLog = React.memo(({
                 else onLog(s.key, 1);
               }}
               className={cn(
-                "flex items-center gap-2 px-4 py-3 rounded-2xl border transition-all duration-300 active:scale-95",
+                "flex items-center gap-2 px-4 py-2.5 rounded-2xl border transition-all active:scale-95",
                 isActive 
-                  ? "bg-primary text-white border-primary shadow-lg shadow-primary/20 scale-[1.02]" 
+                  ? "bg-primary text-white border-primary shadow-lg shadow-primary/20" 
                   : "bg-white dark:bg-zinc-900 border-gray-100 dark:border-zinc-800 text-gray-600 dark:text-gray-400"
               )}
             >
@@ -267,7 +240,7 @@ const AdviceTeaser = React.memo(({ phase }: { phase: string }) => {
   ];
 
   return (
-    <div className="space-y-3 pt-2 pb-24 animate-slide-up [animation-delay:400ms]">
+    <div className="space-y-3 pt-2 pb-24">
       <div 
         className="flex justify-between items-center px-1 cursor-pointer active:opacity-70"
         onClick={() => { navigate('/advice'); trackEvent('advice_teaser_open'); }}
@@ -316,10 +289,7 @@ export const Home: React.FC = () => {
   const calculations = useMemo(() => {
     const lastPeriodDate = parseDate(profile.cycle.lastPeriodStart);
     const diff = Math.floor((now.getTime() - lastPeriodDate.getTime()) / (1000 * 60 * 60 * 24));
-    
-    // If diff is negative (future date error), fallback to 1
-    const safeDiff = diff >= 0 ? diff : 0;
-    const cycleDay = (safeDiff % profile.cycle.averageLength) + 1;
+    const cycleDay = (diff >= 0 ? diff : 0) % profile.cycle.averageLength + 1;
     
     let phase = "Фолликулярная фаза";
     if (cycleDay <= profile.cycle.periodLength) phase = "Менструальная фаза";
@@ -368,7 +338,7 @@ export const Home: React.FC = () => {
   }, [hasLog, handleMainBtnClick]);
 
   return (
-    <div className="min-h-screen bg-surface dark:bg-black px-4 overscroll-y-none animate-page-enter">
+    <div className="min-h-screen bg-surface dark:bg-black px-4 overscroll-y-none">
       <HomeHeader cycleDay={calculations.cycleDay} phase={calculations.phase} />
       <CycleRing 
         cycleLength={profile.cycle.averageLength}

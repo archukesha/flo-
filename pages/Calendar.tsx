@@ -35,7 +35,7 @@ const MiniCycleRing = React.memo(({ profile }: { profile: any }) => {
   const ovulationRotation = ((ovulationDay - 1) / averageLength) * 360 - 90;
 
   return (
-    <div className="w-16 h-16 relative flex items-center justify-center animate-scale-in">
+    <div className="w-16 h-16 relative flex items-center justify-center">
       <svg width="64" height="64" viewBox="0 0 64 64" className="transform -rotate-90">
         <circle cx={center} cy={center} r={radius} fill="none" strokeWidth={strokeWidth} className="stroke-gray-100 dark:stroke-zinc-800" />
         <circle cx={center} cy={center} r={radius} fill="none" strokeWidth={strokeWidth}
@@ -73,14 +73,12 @@ export const CalendarPage: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const touchStart = useRef<number | null>(null);
 
-  // Sync URL
   useEffect(() => {
     const y = currentMonth.getFullYear();
     const m = String(currentMonth.getMonth() + 1).padStart(2, '0');
     setSearchParams({ month: `${y}-${m}` }, { replace: true });
   }, [currentMonth, setSearchParams]);
 
-  // Handle auto-scroll
   useEffect(() => {
     const scrollTo = searchParams.get('scrollTo');
     if (scrollTo && !selectedDate) {
@@ -181,7 +179,7 @@ export const CalendarPage: React.FC = () => {
       const cycleDay = (diff >= 0) ? (diff % profile.cycle.averageLength) + 1 : null;
       
       return (
-        <div className="space-y-6 pb-6 animate-slide-up">
+        <div className="space-y-6 pb-6">
            <div className="flex items-center gap-3">
                {cycleDay && <Chip label={`День цикла: ${cycleDay}`} className="bg-gray-100 text-gray-600 dark:bg-zinc-800 dark:text-gray-300" />}
                {selectedDate > new Date() && <Chip label="Будущее" className="bg-blue-50 text-blue-600 border-blue-100" />}
@@ -197,7 +195,7 @@ export const CalendarPage: React.FC = () => {
                            </div>
                            <div className="flex gap-1">
                                {[1,2,3,4].map(i => (
-                                  <div key={i} className={cn("w-2 h-6 rounded-full transition-all", (log.menstruation.intensity || 0) >= i ? "bg-primary" : "bg-gray-200 dark:bg-zinc-700")} />
+                                  <div key={i} className={cn("w-2 h-6 rounded-full", (log.menstruation.intensity || 0) >= i ? "bg-primary" : "bg-gray-200 dark:bg-zinc-700")} />
                               ))}
                            </div>
                        </div>
@@ -219,16 +217,16 @@ export const CalendarPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-surface dark:bg-black pt-safe-top flex flex-col animate-page-enter" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+    <div className="min-h-screen bg-surface dark:bg-black pt-safe-top flex flex-col" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
       <div className="flex items-center justify-between px-4 pt-4 pb-2">
-         <Button variant="ghost" onClick={handlePrev} className="active:scale-90 transition-transform"><ChevronLeft size={24}/></Button>
+         <Button variant="ghost" onClick={handlePrev}><ChevronLeft size={24}/></Button>
          <div className="flex flex-col items-center gap-1">
              <MiniCycleRing profile={profile} />
-             <h2 className="text-lg font-bold capitalize text-gray-900 dark:text-white transition-all">
+             <h2 className="text-lg font-bold capitalize text-gray-900 dark:text-white">
                 {currentMonth.toLocaleString('ru-RU', { month: 'long', year: 'numeric' })}
              </h2>
          </div>
-         <Button variant="ghost" onClick={handleNext} className="active:scale-90 transition-transform"><ChevronRight size={24}/></Button>
+         <Button variant="ghost" onClick={handleNext}><ChevronRight size={24}/></Button>
       </div>
 
       <div className="px-4 py-3 flex justify-center gap-4 text-[10px] text-gray-500 overflow-x-auto no-scrollbar">
@@ -242,18 +240,17 @@ export const CalendarPage: React.FC = () => {
          <div className="grid grid-cols-7 mb-2">
             {['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].map(d => <div key={d} className="text-center text-xs text-gray-400 font-medium py-1">{d}</div>)}
          </div>
-         {/* Keyed by month string to trigger animation on change */}
-         <div key={currentMonth.toISOString()} className="grid grid-cols-7 gap-1 auto-rows-[1fr] animate-fade-in">
+         <div className="grid grid-cols-7 gap-1 auto-rows-[1fr]">
             {days.map((day, idx) => {
                 let bgClass = "bg-transparent";
                 let textClass = day.isCurrentMonth ? "text-gray-900 dark:text-white" : "text-gray-400 opacity-40";
                 
                 // Prioritize visuals: Period > Predicted Period > Fertile
                 if (day.isPeriod) { 
-                    bgClass = "bg-primary text-white font-medium shadow-sm"; 
+                    bgClass = "bg-primary text-white font-medium"; 
                     textClass = "text-white";
                 } else if (day.isPredictedPeriod) { 
-                    bgClass = "border border-primary text-primary font-medium bg-primary/5"; 
+                    bgClass = "border border-primary text-primary font-medium"; 
                 } else if (day.isFertile) {
                     bgClass = "bg-secondary/20 text-secondary-dark";
                 }
@@ -267,10 +264,10 @@ export const CalendarPage: React.FC = () => {
 
                 return (
                     <div key={idx} onClick={() => { haptic('light'); setSelectedDate(day.date); }}
-                        className={cn("relative aspect-[4/5] sm:aspect-square rounded-xl flex flex-col items-center justify-start pt-1.5 sm:pt-2 transition-all active:scale-90 border-2 border-transparent", bgClass, textClass)}
+                        className={cn("relative aspect-[4/5] sm:aspect-square rounded-xl flex flex-col items-center justify-start pt-1.5 sm:pt-2 transition-all active:scale-95 border-2 border-transparent", bgClass, textClass)}
                     >
                         <span className="text-sm z-10">{day.date.getDate()}</span>
-                        {day.isOvulation && !day.isPeriod && <div className="absolute top-[50%] -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-secondary z-0 shadow-sm" />}
+                        {day.isOvulation && !day.isPeriod && <div className="absolute top-[50%] -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-secondary z-0" />}
                         {showLogDot && (
                             <div className="absolute bottom-1.5 flex gap-0.5">
                                 <div className="w-1 h-1 rounded-full bg-gray-400 dark:bg-gray-500" />
